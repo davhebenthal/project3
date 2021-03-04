@@ -27,6 +27,8 @@ void Bible::makeIndex()
 	exit(2);
 	}
 	
+	
+	
 	while (instream.fail() == 0)
 	{
 		
@@ -64,14 +66,19 @@ Bible::Bible() { // Default constructor
 }
 
 // REQUIRED: lookup finds a given verse in this Bible
-const Verse Bible::lookup(Ref ref, Ref &outputRef, LookupResult& status, bool firstVerse) { 
+const Verse Bible::lookup(Ref ref, LookupResult& status, bool firstVerse) { 
     // TODO: scan the file to retrieve the line with ref ...
 	
+	//debugging code
+	//cout << "lookup running, verse reference to check: ";				
+	//ref.display();
+	//cout << endl;
 	
 	string verseText;
 	bool searchDone = false;
 	bool verseFound = false;
 	Verse currentVerse;
+	int refCount;
 	
 	if (instream.is_open() == false)
 	{
@@ -108,6 +115,7 @@ const Verse Bible::lookup(Ref ref, Ref &outputRef, LookupResult& status, bool fi
 	
 		while (searchDone == false)										//while we still haven't found the appropriate verse
 		{
+			//NOTE: this is code from an older version of lookup
 			//getline(instream, verseText);								//read the next line of text in the Bible object (starting with the first line in the file)
 		
 			//cout<< "get line " << verseText << endl;
@@ -118,10 +126,22 @@ const Verse Bible::lookup(Ref ref, Ref &outputRef, LookupResult& status, bool fi
 			//cout << "verse scanned in by lookup function: " << currentVerse.getRef().getBook() << " " << currentVerse.getRef().getChap() << " " << currentVerse.getRef().getVerse() << endl;
 			//cin.ignore();
 			
-			instream.seekg(index[ref]);									//get the offset for the map entry with a key matching the input Ref (called "ref")
-			getline(instream, verseText);								//read the current line of text into the string VerseText (which I think should include the reference)
-			currentVerse = Verse(verseText);							//create a new verse based on that line
-	
+			refCount = index.count(ref);								//check whether the specified ref exists or not
+			//cout << "number of index matches: " << index.count(ref) << endl;//debugging code
+			
+			if (refCount > 0)
+			{
+				instream.seekg(index[ref]);								//get the offset for the map entry with a key matching the input Ref (called "ref")
+				getline(instream, verseText);							//read the current line of text into the string VerseText (which I think should include the reference)
+				currentVerse = Verse(verseText);						//create a new verse based on that line
+				searchDone= true;
+			}
+			else
+			{
+				cout << "Error: verse entered does not exist." << endl;
+				exit(0);
+			}
+
 			if(currentVerse.getRef() == ref)							//if this is the verse we're looking for (checked by ref), end the loop, if not, then loop again (check the next verse)
 			{
 				searchDone = true;
@@ -147,6 +167,38 @@ const Verse Bible::lookup(Ref ref, Ref &outputRef, LookupResult& status, bool fi
 			}
 		}
 	}
+	else
+	{
+		refCount = index.count(ref);									//check whether the specified verse exists or not
+		//cout << "number of index matches: " << index.count(ref) << endl;//debugging code
+			
+			if (refCount > 0)
+			{
+				instream.seekg(index[ref]);								//get the offset for the map entry with a key matching the input Ref (called "ref")
+				getline(instream, verseText);							//read the current line of text into the string VerseText (which I think should include the reference)
+				currentVerse = Verse(verseText);						//create a new verse based on that line
+				searchDone= true;
+				status = SUCCESS;
+			}
+			else
+			{
+				switch(status)
+				{
+					case SUCCESS :
+						status = NO_VERSE;
+						break;
+					case NO_VERSE :
+						status = NO_BOOK;
+						break;
+					case NO_BOOK :
+						cout << "End of Bible reached. Lookup terminating." << endl;
+						exit(0);
+						break;
+				}
+			}
+	}
+	//this version of else was used in an older version of lookup
+	/*
 	else																//if the first verse has been successfully found, then simply display the next one
 	{
 		getline(instream, verseText);
@@ -162,6 +214,9 @@ const Verse Bible::lookup(Ref ref, Ref &outputRef, LookupResult& status, bool fi
 			cout << this->error(status);
 		}
 	}
+	*/
+	
+	//cout << "lookup function ending. status = " << status << endl;	//debugging code
 	return(currentVerse);
 }
 
