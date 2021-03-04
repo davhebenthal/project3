@@ -59,7 +59,7 @@ int Ref::getVerse() {return verse;}; // Access verse number
 
 // TO DO: implement comparison functions
 // REQUIRED: == comparison
-bool Ref::operator==(const Ref r) 
+bool Ref::operator==(const Ref r) const
 {
 	bool same = true;
 	   
@@ -83,7 +83,7 @@ bool Ref::operator==(const Ref r)
 
 // OPTIONAL: define < and > comparisons
 
-bool Ref::operator>(const Ref r)
+bool Ref::operator>(const Ref r) const
 {
 	bool greaterThan;
 	
@@ -125,7 +125,7 @@ bool Ref::operator>(const Ref r)
 	return greaterThan;
 }
 
-bool Ref::operator<(const Ref r)
+bool Ref::operator<(const Ref r) const
 {
 	bool lessThan;
 	

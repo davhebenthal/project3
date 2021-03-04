@@ -15,6 +15,7 @@
 #include <string>
 #include <stdio.h>
 #include <stdlib.h>
+#include <map>
 using namespace std;
 
 // status codes to be returned when looking up a reference
@@ -27,10 +28,13 @@ class Bible {	// A class to represent a version of the bible
    bool isOpen;			// true if file is open
    // OPTIONAL: you may add variables to keep track of
    // the current line and/or reference when scanning the file
+   void makeIndex();
 
  public:
    Bible();	// Default constructor
    Bible(const string s); // Constructor – pass name of bible file
+   
+   map <Ref, int> index;
    
    // REQUIRED: Find and return a verse in this Bible, given a reference
    const Verse lookup(Ref ref, Ref &outputRef, LookupResult& status, bool firstVerse); 

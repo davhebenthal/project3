@@ -9,14 +9,59 @@
 #include <string>
 #include <stdio.h>
 #include <stdlib.h>
+#include <map>
 using namespace std;
 
-Bible::Bible() { // Default constructor
-	infile = "/home/class/csc3004/Bibles/web-complete";
+void Bible::makeIndex()
+{
+	int offset;
+	int refCount = 0;
+	string line;
+	string word;
+	
+	instream.open(infile.c_str(), ios:: in);
+	instream.unsetf(ios::skipws);
+	
+	if (!instream) {
+	cerr << "Error - can't open input file: " << infile << endl;
+	exit(2);
+	}
+	
+	while (instream.fail() == 0)
+	{
+		
+		offset = instream.tellg();											//get line offset
+		
+		getline(instream, line);											//read contents of line into "line" string
+		
+		if (instream.fail() == 1)
+		{
+			break;
+		}
+		
+		refCount++;															//increase refCount by 1 (not currently used for anything)
+
+		Ref currentRef(line);
+
+		index[currentRef] = offset;											//add the ref to the map (called index)
+		
+	}
+	
+	cout << " index size: " << index.size() << " offset: " << offset << endl;
+	instream.close();
 }
 
 // Constructor – pass bible filename
-Bible::Bible(const string s) { infile = s; }
+Bible::Bible(const string s) 
+{ 
+	infile = s; 
+	makeIndex();
+}
+
+Bible::Bible() { // Default constructor
+	infile = "/home/class/csc3004/Bibles/web-complete";
+	makeIndex();
+}
 
 // REQUIRED: lookup finds a given verse in this Bible
 const Verse Bible::lookup(Ref ref, Ref &outputRef, LookupResult& status, bool firstVerse) { 
@@ -63,15 +108,19 @@ const Verse Bible::lookup(Ref ref, Ref &outputRef, LookupResult& status, bool fi
 	
 		while (searchDone == false)										//while we still haven't found the appropriate verse
 		{
-			getline(instream, verseText);								//read the next line of text in the Bible object (starting with the first line in the file)
+			//getline(instream, verseText);								//read the next line of text in the Bible object (starting with the first line in the file)
 		
 			//cout<< "get line " << verseText << endl;
 	
-			currentVerse = Verse(verseText);							//create new verse based on that line
+			//currentVerse = Verse(verseText);							//create new verse based on that line
 		
 			//debugging code:
 			//cout << "verse scanned in by lookup function: " << currentVerse.getRef().getBook() << " " << currentVerse.getRef().getChap() << " " << currentVerse.getRef().getVerse() << endl;
 			//cin.ignore();
+			
+			instream.seekg(index[ref]);									//get the offset for the map entry with a key matching the input Ref (called "ref")
+			getline(instream, verseText);								//read the current line of text into the string VerseText (which I think should include the reference)
+			currentVerse = Verse(verseText);							//create a new verse based on that line
 	
 			if(currentVerse.getRef() == ref)							//if this is the verse we're looking for (checked by ref), end the loop, if not, then loop again (check the next verse)
 			{

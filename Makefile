@@ -18,7 +18,9 @@ USER= davhebenthal
 CC= g++
 CFLAGS= -g -std=c++11
 
-all:	bibleajax.cgi PutCGI PutHTML
+#all:	bibleajax.cgi PutCGI PutHTML
+
+all: testreader
 
 # Ref Object
 Ref.o : Ref.h Ref.cpp
@@ -45,17 +47,13 @@ bibleajax.o:	bibleajax.cpp
 # TO DO: copy targets to build classes from Project 1:
 # Bible.o, Ref.o, Verse.o
 
-# Ref Object
-Ref.o : Ref.h Ref.cpp
-	$(CC) $(CFLAGS) -c Ref.cpp
-
-# Verse Object
-Verse.o : Ref.h Verse.h Verse.cpp
-	$(CC) $(CFLAGS) -c Verse.cpp
-
-# Bible Object
-Bible.o : Ref.h Verse.h Bible.h Bible.cpp
-	$(CC) $(CFLAGS) -c Bible.cpp
+# testreader program
+testreader.o : Ref.h Verse.h Bible.h
+	$(CC) $(CFLAGS) -c testreader.cpp
+	
+#testreader executable
+testreader: Ref.o Verse.o Bible.o testreader.o
+	$(CC) $(CFLAGS) -o testreader Ref.o Verse.o Bible.o testreader.o
 			
 PutCGI:	bibleajax.cgi
 		chmod 755 bibleajax.cgi

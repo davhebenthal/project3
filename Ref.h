@@ -31,9 +31,9 @@ public:
    int getChap();	// Access chapter number
    int getVerse();	// Access verse number
    // REQUIRED Comparison: determine if two references are equal
-   bool operator==(const Ref);
-   bool operator>(const Ref);
-   bool operator< (const Ref);
+   bool operator==(const Ref) const;
+   bool operator>(const Ref) const;
+   bool operator< (const Ref) const;
    // OPTIONAL: < and > comparisons might also be useful
    
    void display(); 	// Display the reference on cout, example output: John 3:16
