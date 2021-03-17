@@ -18,9 +18,8 @@ USER= davhebenthal
 CC= g++
 CFLAGS= -g -std=c++11
 
-#all:	bibleajax.cgi PutCGI PutHTML
-
-all: testreader
+#all: testreader
+all: bibleajax3.cgi sslookupserver PutCGI PutHTML
 
 # Ref Object
 Ref.o : Ref.h Ref.cpp
@@ -36,13 +35,13 @@ Bible.o : Ref.h Verse.h Bible.h Bible.cpp
 
 # TO DO: For bibleajax.cgi, add dependencies to include
 # compiled classes from Project 1 to be linked into the executable program
-bibleajax.cgi:	bibleajax.o Bible.o Ref.o Verse.o
-		$(CC) $(CFLAGS) -o bibleajax.cgi bibleajax.o Ref.o Verse.o Bible.o -l cgicc
+bibleajax3.cgi:	bibleajax3.o Bible.o Ref.o Verse.o fifo.o
+		$(CC) $(CFLAGS) -o bibleajax3.cgi bibleajax3.o Ref.o Verse.o Bible.o fifo.o -l cgicc
 		# -l option is necessary to link with cgicc library
 
 # main program to handle AJAX/CGI requests for Bible references
-bibleajax.o:	bibleajax.cpp
-		$(CC) $(CFLAGS) -c bibleajax.cpp
+bibleajax3.o:	bibleajax3.cpp
+		$(CC) $(CFLAGS) -c bibleajax3.cpp
 
 # TO DO: copy targets to build classes from Project 1:
 # Bible.o, Ref.o, Verse.o
@@ -51,22 +50,40 @@ bibleajax.o:	bibleajax.cpp
 testreader.o : Ref.h Verse.h Bible.h
 	$(CC) $(CFLAGS) -c testreader.cpp
 	
+#sslookupclient and sslookupserver programs
+sslokupclient.o : sslookupclient.cpp fifo.h
+	$(CC) $(CFLAGS) -c sslookupclient.cpp
+	
+sslookupserver.o : sslookupserver.cpp fifo.h Ref.h Verse.h Bible.h
+	$(CC) $(CFLAGS) -c sslookupserver.cpp
+
+sslookupclient : sslookupclient.o fifo.o
+	$(CC) $(CFLAGS) -o sslookupclient sslookupclient.o fifo.o -L/usr/local/lib –lcgicc
+
+sslookupserver : sslookupserver.o fifo.o Ref.h Verse.h Bible.h
+	$(CC) $(CFLAGS) -o sslookupserver sslookupserver.o fifo.o Ref.o Verse.o Bible.o
+	
+#fifo code
+fifo.o : fifo.cpp fifo.h
+	$(CC) $(CFLAGS) -c fifo.cpp
+	
+	
 #testreader executable
 testreader: Ref.o Verse.o Bible.o testreader.o
 	$(CC) $(CFLAGS) -o testreader Ref.o Verse.o Bible.o testreader.o
 			
-PutCGI:	bibleajax.cgi
-		chmod 755 bibleajax.cgi
-		cp bibleajax.cgi /var/www/html/class/csc3004/$(USER)/cgi-bin
+PutCGI:	bibleajax3.cgi
+		chmod 755 bibleajax3.cgi
+		cp bibleajax3.cgi /var/www/html/class/csc3004/$(USER)/cgi-bin
 
 		echo "Current contents of your cgi-bin directory: "
 		ls -l /var/www/html/class/csc3004/$(USER)/cgi-bin/
 
 PutHTML:
-		cp bibleajax.html /var/www/html/class/csc3004/$(USER)
+		cp bibleajax3.html /var/www/html/class/csc3004/$(USER)
 
 		echo "Current contents of your HTML directory: "
 		ls -l /var/www/html/class/csc3004/$(USER)
 
 clean:		
-		rm *.o core bibleajax.cgi
+		rm *.o core bibleajax3.cgi

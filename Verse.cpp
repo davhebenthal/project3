@@ -54,3 +54,20 @@ void Verse::display() {
  {
 	 cout << verseText << endl;
  }
+
+//returns a String containing the verseRef concatenated with the verseText
+string Verse::giveString()
+{
+	string output;
+	
+	output = to_string(verseRef.getBook()); 
+	output = output + ":";
+	output = output + to_string(verseRef.getChap());
+	output = output	+ ":";
+	output = output + to_string(verseRef.getVerse());
+	output = output + ":";
+	output = output + verseText;
+	output = output + "\n";
+	
+	return output;
+}

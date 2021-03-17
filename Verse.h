@@ -35,6 +35,7 @@ class Verse {
         // the reference should be displayed by calling verseref.display().
 
 	void displayText(); //display only the verse text (no reference);
+	string giveString(); //return "b:c:v:Verse Text"
 };
 
 #endif //Verse_H

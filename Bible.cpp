@@ -135,13 +135,27 @@ const Verse Bible::lookup(Ref ref, LookupResult& status, bool firstVerse) {
 				getline(instream, verseText);							//read the current line of text into the string VerseText (which I think should include the reference)
 				currentVerse = Verse(verseText);						//create a new verse based on that line
 				searchDone= true;
+				status = SUCCESS;
 			}
 			else
 			{
-				cout << "Error: verse entered does not exist." << endl;
-				exit(0);
+				Ref checkRef = Ref(ref.getBook(), ref.getChap(), 1);	//make a new ref with the same book and chapter number but a verse number of 1
+				if(index.count(checkRef) > 0)							//if this is a valid reference, then the requested verse number was invalid
+				{
+					searchDone=true;
+					status = NO_VERSE;
+				}
+				else													//otherwise, the chapter number was invalid
+				{														//(the book number was chosen from a drop down list and should always be valid)
+					searchDone=true;
+					status = NO_CHAPTER;
+				}
+				
+				//check same book, same chapter, verse 1. if that exists, then the problem must be the verse number. if it doesn't, then it must be the chapter number
 			}
 
+			//this code is for an older version of Bible::lookup
+			/*
 			if(currentVerse.getRef() == ref)							//if this is the verse we're looking for (checked by ref), end the loop, if not, then loop again (check the next verse)
 			{
 				searchDone = true;
@@ -165,6 +179,7 @@ const Verse Bible::lookup(Ref ref, LookupResult& status, bool firstVerse) {
 				status = NO_VERSE;
 				cout << this->error(status);
 			}
+			*/
 		}
 	}
 	else

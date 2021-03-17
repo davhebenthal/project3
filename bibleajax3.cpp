@@ -27,6 +27,19 @@
 #include <string> 
 #include <stdio.h>
 #include <stdlib.h>
+#include <list>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sstream>
+#include <map>
+#include <vector>
+#include "fifo.h"
+#define logging
+#define LOG_FILENAME "/tmp/davhebenthal-bibleajax3.log"
+#include "logfile.h"
 using namespace std;
 
 /* Required libraries for AJAX to function */
@@ -36,12 +49,17 @@ using namespace std;
 using namespace cgicc;
 
 int main() {
+  cout << "Content-Type: text/plain\n\n";
+
+  #ifdef logging 
+  logFile.open(LOG_FILENAME, ios::out); 
+  #endif
+
   /* A CGI program must send a response header with content type
    * back to the web client before any other output.
    * For an AJAX request, our response is not a complete HTML document,
    * so the response type is just plain text to insert into the web page.
    */
-  cout << "Content-Type: text/plain\n\n";
   
   Cgicc cgi;  // create object used to access CGI request data
 
@@ -113,59 +131,127 @@ int main() {
 		 validInput = true;
   }
 
+  log("Input received from user: " + to_string(bookNum) + " " + to_string(chapterNum) + " " + to_string(verseNum) + "\n");
 
-  /* TO DO: PUT CODE HERE TO CALL YOUR BIBLE CLASS FUNCTIONS
-   *        TO LOOK UP THE REQUESTED VERSES
-   */
-   
-   LookupResult result;
-   Bible webBible("/home/class/csc3004/Bibles/web-complete");
-   Verse lookupVerse;
-   //cout << "Looking up ref for: " << bookNum << " " << chapterNum << " " << verseNum << endl;
-   Ref ref(bookNum, chapterNum, verseNum);
-   Ref outputRef(1,1,1);
-   bool firstVerse = true;
-   
+  if (validInput == true)
+  {
+	//send a string in the format "bookNum:chapterNum:verseNum:numOfVerses\n"
+  
+	string searchString;
+  
+	searchString = to_string(bookNum);
+	searchString = searchString + ":";
+	searchString = searchString + to_string(chapterNum);
+	searchString = searchString + ":";
+	searchString = searchString + to_string(verseNum);
+	searchString = searchString + ":";
+	searchString = searchString + to_string(numOfVerses);
+	searchString = searchString + "\n";
+	
+	log("assembled string to be sent: " + searchString);
+  
+	string receive_pipe = "ssreply";
+	string send_pipe = "ssrequest";
+  
+	Fifo recfifo(receive_pipe);
+	Fifo sendfifo(send_pipe);
+  
+	sendfifo.openwrite();
+	
+	log("sending pipe " + send_pipe + " open" + "\n");
+	
+	sendfifo.send(searchString);
+  
+    log("searchString sent\n");
+  
+	recfifo.openread();
+	
+	log("receiving pipe " + receive_pipe + " open" + "\n");
+	
+	//receive the resultStatus
+	string outputString = recfifo.recv();
+	
+	//recfifo.recv stops at newline characters, so it needs to be run once to receive every requested verse
+	int n = numOfVerses;
+	while (n > 0)
+	{
+		outputString = outputString + "\n" + recfifo.recv();
+		n--;
+	}
+	
+	log("outputString received: " + outputString + "\n");
+  
+	//should receive a string consisting of "result\n" once, followed by "bookNumber:chapterNumber:verseNumber:verse text\n" for as many verses as are requested*/
 
-   
-   lookupVerse = webBible.lookup(ref, outputRef, result, firstVerse);
-   
-   
-
-  /* SEND BACK THE RESULTS
-   * Finally we send the result back to the client on the standard output stream
-   * in HTML text format.
-   * This string will be inserted as is inside a container on the web page, 
-   * so we must include HTML formatting commands to make things look presentable!
-   */
-  if (validInput && result == SUCCESS) {
-	cout << "Search Type: <b>" << **st << "</b>" << "</br>";
-		 //cout << "Your result: ";
-		 //<< **book << " " << **chapter << ":" << **verse << " ";
-		 //<< "<em> The " << **nv
-		 //<< " actual verse(s) retreived from the server should go here!</em></p>" << endl;
-		 ref.display();																			//display the reference for the first verse
-		 cout << " " << endl;
-		 lookupVerse.displayText();																//display the text for the first verse
-		 numOfVerses--;
-		 firstVerse = false;
-		 while (numOfVerses > 0 && result == SUCCESS)											//if there are still more verses to display, then move to the next verse unless the end of the Bible is reached
-		 {
-			 cout << "</br>"; 
-			 cout << " ";
-			 lookupVerse = webBible.lookup(ref, outputRef, result, firstVerse);
-			 if (result == SUCCESS)																//result for all verses after the first will only ever != SUCCESS if the end of the Bible has been reached
-			 {
+	//first check the result
+	string strResult;
+	int outputResult;
+  
+	strResult = GetNextToken(outputString,"\n");
+	outputResult = atoi(strResult.c_str());
+	
+	log("first section of output string (should contain an integer indicating the result status): " + strResult + "\n");
+  
+	//if the result is good, then split and output the rest of the string
+	if (outputResult == 0)
+	{
+  
+		string strBook;
+		int outputBook;
+		string strChapter;
+		int outputChapter;
+		string strVerse;
+		int outputVerse;
+		string verseText;
+		
+		log("outputting verse to the client.\n");
+  
+		while(numOfVerses > 0)
+		{
+				/* Split the message into parts*/
+				strBook = GetNextToken(outputString,":");
+				outputBook = atoi(strBook.c_str());
+				// Get the chapter number
+				strChapter = GetNextToken(outputString,":");
+				outputChapter = atoi(strChapter.c_str());
+				// Get the verse number
+				strVerse = GetNextToken(outputString,":");
+				outputVerse = atoi(strVerse.c_str());
+				// Get the verse text
+				verseText = GetNextToken(outputString,"\n");
+				
+				log("verse reference being output: " + to_string(outputBook) + ":" + to_string(outputChapter) + ":" + to_string(outputVerse) + "\n");
+				log("verse text being output: " + verseText + "\n");
+		
+				Ref outputRef(outputBook, outputChapter, outputVerse);
 				outputRef.display();
-				cout << " " << endl;
-				lookupVerse.displayText();
+				cout << " " << verseText << endl;
+				
 				numOfVerses--;
-			 }
-		 }
-  }
-  else {
-	  //cout << "<p>Invalid Input: <em>report the more specific problem.</em></p>" << endl;
-	  //cout << webBible.error(result);
+		}
+	}
+	else
+	{
+		//otherwise output the error
+		
+		log("Error status. outputting error message to the client.\n");
+		
+		switch (outputResult)
+		{
+			case 1 :
+				cout << "Error: book not found";
+				break;
+			case 2 :
+				cout << "Error: chapter not found";
+				break;
+			case 3 :
+				cout << "Error: verse not found";
+				break;
+		}
+	}
+  
+	recfifo.fifoclose();
+	sendfifo.fifoclose();
   }
   return 0;
 }
